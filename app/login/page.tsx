@@ -11,6 +11,14 @@ export default function LoginPage() {
           </div>
         </div>
         <LoginForm />
+        <div className='left'>
+          <div>
+            Nie masz konta? <a href="/register">Zarejestruj się</a>
+          </div>
+          <div className="right">
+            Zapomniałeś hasła? <a href="/forgot-password">Zresetuj hasło</a>
+          </div>
+        </div>
       </div>
     </main>
   );
