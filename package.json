@@ -1,5 +1,22 @@
 {
   "private": true,
+  "name": "nextjs-template",
+  "version": "0.0.1",
+  "description": "Next.js template with Tailwind CSS, TypeScript, ESLint, Prettier, and NextAuth.js",
+  "author": "Artur Wojciechowski",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ProgramistaiJa/next-14-app"},
+  "main": "page.tsx",
+  "keywords": [
+    "nextjs",
+    "tailwindcss",
+    "typescript",
+    "eslint",
+    "prettier",
+    "nextauth"
+  ],
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -35,6 +52,6 @@
     "prettier": "^3.0.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": "^18"
   }
 }
