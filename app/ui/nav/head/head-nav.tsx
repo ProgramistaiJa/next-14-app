@@ -20,10 +20,6 @@ export const HeadNav = () => {
   const pathname = usePathname();
 
   const isRouteActive = (href: string) => {
-    console.log('isRouteActive')
-    console.log('pathname', pathname)
-    console.log('href', href)
-
     if (href === '/') {
       const isRoot = pathname === '/'
       return isRoot

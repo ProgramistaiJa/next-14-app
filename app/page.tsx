@@ -19,7 +19,6 @@ export default function Page() {
             , brought to you by Vercel.
           </p>
           <LoginLink version={Version.PRIMERY} />
-          <LoginLink version={Version.SECONDARY} />
         </div>
         <div className="flex items-center justify-center p-6 md:w-3/5 md:px-28 md:py-12">
           {/* Add Hero Images Here */}
