@@ -7,8 +7,8 @@ export const authConfig = {
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
-      console.log('nextUrl', nextUrl);
-      console.log('nextUrl.href', nextUrl.href);
+      // console.log('nextUrl', nextUrl);
+      // console.log('nextUrl.href', nextUrl.href);
       const isLoggedIn = !!auth?.user;
       if (isLoggedIn){ return true }
       return false
