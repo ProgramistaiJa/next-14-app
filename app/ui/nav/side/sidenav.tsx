@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import NavLinks from '@/app/ui/dashboard/nav-links';
 import AcmeLogo from '@/app/ui/acme-logo';
-import { Logout } from '../auth/logout';
+import { Logout } from '../../auth/logout';
+import SideNavLinks from '@/app/ui/nav/side/side-nav-links';
 
 export default function SideNav() {
   return (
@@ -15,7 +15,7 @@ export default function SideNav() {
         </div>
       </Link>
       <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-        <NavLinks />
+        <SideNavLinks />
         <div className="hidden h-auto w-full grow rounded-md bg-gray-50 md:block"></div>
         <Logout />
       </div>
