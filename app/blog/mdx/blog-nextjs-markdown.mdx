@@ -1,0 +1,434 @@
+---
+title: Blog w NextJs z markdown
+date: "18th April 2023"
+description: Jak stworzyć bloga w NextJs z markdown
+openGraph:
+  { images: "https://photos.sphereshowcase.com/tBJczsgyzUAP3woETDr31.jpg" }
+---
+
+[comment]: <> ( źródło: https://gaudion.dev/blog/nextjs-mdx-blog )
+[comment]: <> ( źródło: https://mdxjs.com/)
+
+## Wprowadzenie
+
+W tym samouczku pokażę, jak skonfigurować blog Next.js 13, który wykorzystuje nowy katalog aplikacji. Będzie on używał stron MDX (Extended Markdown) dla samych blogów, a także TailwindCSS do automatycznego stylizowania tych blogów. Rozszerzymy funkcjonalność bloga, przyglądając się komponentom MDX, które mogą dodać interaktywność do naszych blogów MDX. Na koniec przyjrzymy się wtyczkom remark & rehype, w szczególności remark-gfm, która pozwoli na "GitHub Flavoured" markdown, takie jak tabele i listy zadań.
+Aby dowiedzieć się więcej o MDX, zajrzyj na ten blog tutaj: Czym jest MDX?
+
+W Next.js istnieją 3 podejścia do renderowania stron MDX:
+
+- next/mdx - Oficjalne narzędzie stworzone przez zespół Next.js
+- mdx-bundler - Szybki kompilator i bundler mdx
+- next-mdx-remote - Built by Hashicorp
+
+W tym samouczku użyjemy next-mdx-remote, odczytując nasze blogi z systemu plików. next-mdx-remote daje nam możliwość rozszerzenia w przyszłości i pobierania blogów z zewnętrznych źródeł, takich jak baza danych, CMS (system zarządzania treścią), taki jak Contentful lub Headless Wordpress, a nawet zewnętrzne narzędzie, takie jak Notion.
+
+## 1. Konfiguracja naszej aplikacji
+
+Aby skonfigurować naszą aplikację, użyjemy następującego polecenia. Spowoduje to utworzenie podstawowej aplikacji szablonu Next.js z automatycznie skonfigurowanym TailwindCSS.
+npx create-next-app@latest --tailwind
+
+Po wyświetleniu monitu wybierzemy następujące opcje:
+Nazwa projektu - wybierz odpowiednią nazwę, taką jak my-mdx-blog
+
+- Użyj Typescript - Tak
+- Użyj ESLint - Tak
+- Użyj katalogu src/ - Nie
+- Użyj katalogu app/ - Tak
+- Czy chcesz dostosować domyślny alias importu - Nie
+
+### Pakiety konfiguracji
+
+Istnieje kilka wymaganych pakietów do zainstalowania; aby to zrobić, uruchom następujące polecenia:
+
+npm install next-mdx-remote - użyjemy go do wyświetlania naszych plików MDX jako blogów.
+npm install gray-matter - pozwoli nam to dodać metadane do naszych blogów, takie jak tytuł lub opis
+npm install @tailwindcss/typography - Pozwoli nam to automatycznie stylizować każdy element markdown w naszym blogu bez konieczności samodzielnego pisania CSS dla każdego komponentu.
+
+#### Dodaj wtyczkę TailwindCSS
+
+In the tailwind.config.js file, we now need to add the typography plugin to our current TailwindCSS setup:
+
+```js
+// tailwind.config.js
+
+	module.exports = {
+		...
+		plugins: [
+		require('@tailwindcss/typography')
+		],
+	}
+```
+
+#### Czyszczenie domyślnej stylizacji
+
+W pliku globals.css usuń cały wstępnie napisany CSS i zastąp go następującym. Spowoduje to zaimportowanie tailwindcss do naszej aplikacji.
+
+```css
+// globals.css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### Podstawowa stylizacja
+
+W naszej warstwie głównej (/app/layout.tsx) zaktualizuj znacznik html, aby zawierał następującą stylizację. Spowoduje to ustawienie podstawowej stylizacji, takiej jak ciemne tło, biały tekst, a także wypełnienie i maksymalna szerokość. Ponieważ jest to w głównym układzie, będzie miało zastosowanie do każdej strony w naszej aplikacji.
+
+```
+// app/layout.tsx
+	return (
+		<html lang="en" className='bg-slate-900 text-white max-w-3xl mx-auto py-20 px-4 '>
+		<body>{children}</body>
+		</html>
+	)
+```
+
+## 2. Utwórz nasz pierwszy blog
+
+Teraz, gdy nasza aplikacja jest już skonfigurowana, możemy stworzyć nasz pierwszy blog.
+
+### Utwórz katalog blogów
+
+Utwórz nowy katalog w katalogu głównym naszego projektu o nazwie blogs, w którym będą przechowywane wszystkie nasze pliki .mdx.
+
+#### first-blog.mdx
+
+Utwórz plik o nazwie first-blog.mdx i wprowadź następujące dane:
+
+```
+	---
+	title: My First Blog
+	date: '18th April 2023'
+	description: Welcome to my first blog.
+	---
+
+	This is my **first** blog post using *markdown*.
+
+	### My subheading
+	Here is an image:
+
+	![Laptop on Desk](/img/laptop.jpg)
+
+	There is a code snippet below:
+
+	export function myComponent(){
+		return (
+			test
+		)
+	}
+```
+
+Górna sekcja tego pliku z tytułem, datą i opisem to Frontmatter i pozwala nam dołączyć metadane do naszego wpisu na blogu, które inne strony w naszej aplikacji mogą odczytać i wykorzystać za pomocą zainstalowanego przez nas pakietu gray-matter.
+
+#### Zdjęcia na blogu
+
+Jak widać, powyższy blog mdx zawiera obrazek "/img/laptop.jpg". W tym celu użyłem tego zdjęcia z Unsplash, ale możesz użyć dowolnego zdjęcia.
+Utwórz katalog img w folderze publicznym i zapisz w nim obraz laptop.jpg
+
+## 3. Utwórz naszą stronę główną
+
+Strona główna będzie wyświetlać tytuł i opis każdego wpisu na blogu wraz z linkiem do pełnego wpisu.
+
+### Wymagane importy
+
+Najpierw musimy zaimportować:
+
+- fs, aby odczytać nasze blogi z systemu plików
+- path, aby znaleźć lokalną ścieżkę do naszych blogów
+- matter, aby wyodrębnić metadane z naszych blogów
+- Link, aby móc linkować do naszych blogów
+
+```
+// app/page.tsx
+	import fs from 'fs'
+	import path from 'path'
+	import matter from 'gray-matter'
+
+	import Link from 'next/link'
+
+```
+
+### Odczytywanie plików .mdx
+
+Teraz musimy odczytać same pliki. Zwrócimy metadane, które skonfigurowaliśmy na początku naszego bloga (tytuł, opis i datę), a także slug strony.
+Slug będzie częścią adresu URL bloga: /blogs/[slug].
+Dla każdego bloga naszym slugiem będzie po prostu nazwa pliku (bez .mdx na końcu)
+
+```
+// app/page.tsx
+	export default function Home() {
+
+		// 1 Set blogs directory
+		const blogDir = "blogs"
+
+		// 2 Find all files in the blog directory
+		const files = fs.readdirSync(path.join(blogDir))
+
+		// 3 For each blog found
+		const blogs = files.map(filename => {
+
+			// 4 Read the content of that blog
+			const fileContent = fs.readFileSync(path.join(blogDir, filename), 'utf-8')
+
+			// 5 Extract the metadata from the blog's content
+			const { data: frontMatter } = matter(fileContent)
+
+			// 6 Return the metadata and page slug
+			return {
+				meta: frontMatter,
+				slug: filename.replace('.mdx', '')
+			}
+		})
+	}
+```
+
+### Wyświetlanie podglądu bloga
+
+Teraz, gdy mamy już zmienną blogs, możemy wyświetlić blogi na stronie. Tutaj mapuję każdy blog i wyświetlam jego tytuł i opis. Znacznik linku również łączy się z indywidualną stroną bloga.
+
+```tsx
+// app/page.tsx
+	return (
+		<main className="flex flex-col">
+			<h1 className="text-3xl font-bold">
+				My Blogging Site
+			</h1>
+
+
+
+			<section className='py-10'>
+				<h2 className='text-2xl font-bold'>
+					Latest Blogs
+				</h2>
+
+				<div className='py-2'>
+					{blogs.map(blog => (
+						<Link href={'/blogs/' + blog.slug} passHref key={blog.slug}>
+						<div className='py-2 flex justify-between align-middle gap-2'>
+							<div>
+								<h3 className="text-lg font-bold">{blog.meta.title}</h3>
+								<p className="text-gray-400">{blog.meta.description}
+							</div>
+							<div className="my-auto text-gray-400">
+								{blog.meta.date}
+							</div>
+						</div>
+						</Link>
+					))}
+				</div>
+			</section>
+		</main>
+	)
+```
+
+Jeśli uruchomimy naszą aplikację za pomocą npm run dev, możemy zobaczyć podgląd naszego bloga wyświetlany na stronie głównej naszej aplikacji
+
+## 4. Utwórz stronę naszego bloga
+
+Strona bloga wyświetli zawartość samego bloga, w tym celu użyje MdxRemote do renderowania pliku .mdx do html. Następnie użyje wtyczki typograficznej TailwindCSS do automatycznego stylizowania naszego markdown.
+First create the /app/blog/[slug] directory and then create the page.tsx file inside. The [slug] in the directory makes this a dynamic route.
+
+### Importy
+
+First add the imports to the blog page. These are the same imports as the home page other than the MDXRemote which will be used to render the blog itself.
+
+```
+// app/blog/[slug]/page.tsx
+	import fs from 'fs'
+	import path from 'path'
+	import matter from 'gray-matter'
+
+	import { MDXRemote } from 'next-mdx-remote/rsc'
+```
+
+### Generowanie parametrów statycznych
+
+Domyślnie trasy dynamiczne są generowane na żądanie w czasie żądania, co prowadzi do powolnego ładowania stron i złego SEO. Zamiast tego, ponieważ nasze blogi nie będą się regularnie zmieniać, możemy statycznie generować trasy dla tych blogów w czasie kompilacji.
+Aby to zrobić, pobieramy wszystkie pliki z katalogu "blogs" i zwracamy tablicę slugs dla każdego pliku.
+
+```
+// app/blog/[slug]/page.tsx
+	export async function generateStaticParams() {
+		const files = fs.readdirSync(path.join('blogs'))
+
+		const paths = files.map(filename => ({
+			slug: filename.replace('.mdx', '')
+		}))
+
+		return paths
+	}
+```
+
+### Metoda Get Post
+
+Ta metoda po prostu pobierze wpis na blogu z danego slugu. W tym celu odczytuje plik w katalogu "blogs" o tej samej nazwie co slug. Następnie używa matter do pobrania metadanych i zawartości markdown tego pliku i zwraca metadane FrontMatter, wprowadzony slug i zawartość markdown.
+
+```
+// app/blog/[slug]/page.tsx
+	function getPost({slug}:{slug : string}){
+		const markdownFile = fs.readFileSync(path.join('blogs',slug + '.mdx'), 'utf-8')
+
+		const { data: frontMatter, content } = matter(markdownFile)
+
+		return {
+			frontMatter,
+			slug,
+			content
+		}
+	}
+```
+
+### Wyświetl wpis na blogu
+
+Na koniec wyświetlamy sam wpis na blogu. Najpierw pobieramy post za pomocą metody getPost, a następnie wyświetlamy go za pomocą komponentu MDXRemote.
+Wyświetlamy również tytuł bloga w górnej części strony.
+
+```
+// app/blog/[slug]/page.tsx
+	export default function Post({ params } :any) {
+		const props = getPost(params);
+
+		return (
+			<article className='prose prose-sm md:prose-base lg:prose-lg prose-slate !prose-invert mx-auto'>
+				<h1>{props.frontMatter.title}</h1>
+
+				@ts-expect-error Server Component
+				<MDXRemote source={props.content}/>
+			</article>
+		)
+	}
+```
+
+W powyższym fragmencie kodu używamy prose z TailwindCSS do wyświetlania markdown w ładnym formacie bez konieczności samodzielnego stylizowania go. Używamy również różnych kolorów prose (prose-slate, prose-invert) i rozmiarów (prose-sm, prose-lg), dzięki czemu strona bloga jest również responsywna dla urządzeń mobilnych.
+
+## 5. Konfiguracja metadanych bloga
+
+Ustawienie metadanych dla bloga Next.js naprawdę pomoże w pozycjonowaniu witryny w Google. Główne 2 tagi metadanych do skonfigurowania to tytuł i opis, ale istnieje wiele innych, które możesz chcieć skonfigurować.
+To generate metadata for your blog, you can use the generateMetadata method.
+
+```
+// app/blog/[slug]/page.tsx
+	export async function generateMetadata({ params } : any) {
+		const blog = getPost(params);
+
+		return{
+			title: blog.frontMatter.title,
+			description: blog.frontMatter.description,
+			openGraph: {
+				images: '/opengraph-image.png'
+			}
+		}
+	}
+```
+
+Tutaj po prostu ustawiamy tagi metadanych "title" i "description" na tagi bloga. Możemy to łatwo rozszerzyć, aby ustawić również tagi OpenGraph.
+
+## 6. Tworzenie komponentów MDX
+
+Jedną z głównych zalet korzystania z MDX w porównaniu do tradycyjnego markdown jest to, że możemy używać komponentów wewnątrz naszych plików MDX, aby dodać interaktywność do naszych stron. Aby to zademonstrować, pokażę podstawowy przykład dodania przycisku do naszego wpisu na blogu.
+Najpierw musimy utworzyć komponent przycisku. Ponieważ używa on kodu po stronie klienta (useState), musimy użyć dyrektywy use client.
+
+```
+// components/mdx/Button.tsx
+	'use client';
+
+	import { useState } from "react";
+
+	export default function Button({ text } : {text : string}){
+
+	const [toggle, setToggle] = useState(false)
+
+	return (
+		<button className="bg-slate-700 rounded-md px-4 py-2"
+				onClick={() => setToggle(!toggle)}>
+			{toggle ? text : "Click Me"}
+		</button>
+	)
+}
+```
+
+Następnie musimy dodać ten komponent do naszej tablicy komponentów MDXRemote.Następnie musimy dodać ten komponent do naszej tablicy komponentów MDXRemote.
+Najpierw zaimportuj przycisk na naszą stronę bloga:
+
+```
+// app/blog/[slug]/page.tsx
+	import Button from '@/components/mdx/Button'
+```
+
+Następnie zaktualizuj nasz komponent MDXRemote, aby zawierał nowy komponent:
+
+```
+// app/blog/[slug]/page.tsx
+	<MDXRemote source={props.content} components={{Button}}/>
+```
+
+Wreszcie, możemy użyć komponentu przycisku w naszym blogu mdx:
+
+```
+// blogs/first-blog.mdx
+	...
+	And here is our button:
+
+	<Button text="my button"/>
+```
+
+Który po dodaniu zapewnia następującą funkcjonalność:
+
+```html
+<img src="/img/blog/first-blog/mdx-button-component.gif" alt="button gif" />
+```
+
+Korzystając z tego podejścia, możemy również zastąpić istniejące domyślne komponenty niestandardowymi wersjami tych komponentów, takimi jak nasz niestandardowy komponent link mdx. Lub dodać dodatkowe funkcje, takie jak osadzanie filmów z YouTube na naszym blogu MDX.
+
+## 7. Wtyczki Rehype i Remark
+
+Aby jeszcze bardziej rozszerzyć MDX, możemy użyć wtyczek rehype i remark. Wtyczki te pozwalają na takie rzeczy jak dodatkowa składnia markdown, podświetlanie kodu wewnątrz wpisu na blogu lub automatyczne generowanie spisu treści.
+
+Aby zademonstrować, jak to działa, dodamy wtyczkę remarkGfm, która pozwala nam dodawać dodatkowe funkcje markdown do naszych blogów, takie jak proste tabele.
+
+### Zainstaluj wtyczkę
+
+```bash
+npm install remark-gfm
+```
+
+### Aktualizacja wpisu na blogu
+
+Możemy teraz zaktualizować nasz wpis na blogu, aby zawierał tabelę markdown:
+
+```
+// blogs/first-blog.mdx
+	And here is a table:
+
+	| Col 1 | Col 2 |
+	| ----- | ----- |
+	| val 1 | val 2 |
+	| val 3 | val 4 |
+```
+
+### Aktualizacja MdxRemote
+
+Wreszcie, aby ta tabela renderowała się poprawnie, musimy dodać wtyczkę do naszego komponentu MDXRemote:
+
+Najpierw ustawiamy opcje mdx:
+
+```
+// app/blog/[slug]/page.tsx
+import remarkGfm from 'remark-gfm'
+
+const options = {
+    mdxOptions: {
+        remarkPlugins: [remarkGfm],
+        rehypePlugins: [],
+    }
+}
+```
+
+Następnie przekazujemy te opcje do naszego komponentu MDXRemote:
+
+```
+// app/blog/[slug]/page.tsx
+<MDXRemote source={props.content} components={{Button}} options={options}/>
+```
+
+Gdy uruchomimy naszą aplikację, nasza tabela będzie teraz poprawnie renderowana:
