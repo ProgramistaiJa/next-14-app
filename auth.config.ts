@@ -9,7 +9,7 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
 
-      if (isLoggedIn){ return true }
+      if (isLoggedIn){ return true };
       return false
 
 
