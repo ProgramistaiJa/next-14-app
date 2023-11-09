@@ -1,5 +1,6 @@
 'use client';
 
+import { isRouteActive } from '@/app/lib/utils';
 import { HomeIcon, NewspaperIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import Link from 'next/link'
@@ -18,20 +19,13 @@ const links = [
 
 export const HeadNav = () => {
   const pathname = usePathname();
-
-  const isRouteActive = (href: string) => {
-    if (href === '/') {
-      const isRoot = pathname === '/'
-      return isRoot
-    }
-
-    return pathname.includes(href.slice(1))
-  }
-  
+   
   return (
     <nav className=' flex text-white'>
         {links.map((link) => {
         const LinkIcon = link.icon;
+        const href=link.href
+
         return (
           <Link
             key={link.name}
@@ -39,7 +33,7 @@ export const HeadNav = () => {
             className={clsx(
               'flex h-[48px] grow items-center justify-center gap-2 rounded-md p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3',
               {
-                'bg-sky-100 text-blue-600': isRouteActive(link.href),
+                'bg-sky-100 text-blue-600': isRouteActive({href, pathname}),
               },
             )}
           >

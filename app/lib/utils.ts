@@ -67,3 +67,11 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     totalPages,
   ];
 };
+
+export const isRouteActive = ({href, pathname}:{href: string; pathname: string}) => {
+  if (href === '/') {
+    const isRoot = pathname === '/'
+    return isRoot
+  }
+  return pathname.includes(href.slice(1))
+};
